@@ -44,8 +44,13 @@ body {
   font-weight: bold;
   text-anchor: middle;
 }
+
 .active {
   font-weight: bold;
+}
+
+.inactive {
+  font-weight: normal;
 }
 
 #footer {
