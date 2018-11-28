@@ -23,7 +23,7 @@ var svg = d3
 
 // Append a group to the SVG area and shift ('translate') it to the right and down to adhere
 // to the margins set in the "chartMargin" object.
-var chartGroup = svg1.append("g")
+var chartGroup = svg.append("g")
     .attr("transform", `translate(${chartMargin.left}, ${chartMargin.top})`);
 
 // Initial Params
@@ -139,10 +139,11 @@ function updateToolTip(chosenXAxis, chosenYAxis, circlesGroup) {
 
 // Load data from hours-of-tv-watched.csv
 d3.csv("/assets/data/data.csv", function(error, data) {
-    
     // Log an error if one exists
     if (error) return console.warn(error);
+
     console.log(data)
+
     // Cast as numbers
     data.forEach(function(d){
         d.poverty = +d.poverty;
@@ -154,108 +155,77 @@ d3.csv("/assets/data/data.csv", function(error, data) {
     });
 
     // Scales
-    var xScale1 = d3.scaleLinear()
-        .domain([7, d3.max(data, d => d.poverty) + 1])
-        .range([0, width]);
-    var xScale2 = d3.scaleLinear()
-        .domain([28, d3.max(data, d => d.age) + 1])
-        .range([0, width]);
-    var xScale3 = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.income)])
-        .range([0, width]);
-    var yScale1 =  d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.obesity)])
-        .range([height, 0]);
-    var yScale2 = d3.scaleLinear()
-        .domain([8, d3.max(data, d => d.smokes) + 1])
-        .range([height, 0]);
-    var yScale3 = d3.scaleLinear()
-        .domain([0, d3.max(data, d => d.healthcare) + 1])
-        .range([height, 0]);
+    var xLinearScale = xScale(data, chosenXAxis);
+    var yLinearScale = yScale(data, chosenYAxis);
 
-    // Axes
-    var bottomAxis1 = d3.axisBottom(xScale1);
-    var bottomAxis2 = d3.axisBottom(xScale2);
-    var bottomAxis3 = d3.axisBottom(xScale3);
-    var leftAxis1 = d3.axisLeft(yScale1);
-    var leftAxis2 = d3.axisLeft(yScale2);
-    var leftAxis3 = d3.axisLeft(yScale3);
+    // X Axis
+    var bottomAxis = d3.axisBottom(xLinearScale);
+    var xAxis = chartGroup.append("g")
+    .classed("x-axis", true)
+    .attr("transform", `translate(0, ${height})`)
+    .call(bottomAxis);
+
+    // Y Axis
+    var leftAxis = d3.axisLeft(yLinearScale);
+    var yAxis = chartGroup.append("g")
+    .classed("y-axis", true)
+    .call(leftAxis);
     
-    // Add to chart
-    chartGroup1.append("g")
-        .attr("transform", `translate(0, ${height})`)
-        .call(bottomAxis1);
-    chartGroup1.append("g")
-        .call(leftAxis3);
-    chartGroup2.append("g")
-        .attr("transform", `translate(0, ${height})`)
-        .call(bottomAxis2);
-    chartGroup2.append("g")
-        .call(leftAxis2);
-
     // Circles
-    var circlesGroup1 = chartGroup1.selectAll("circle")
+    var circlesGroup = chartGroup.selectAll("circle")
         .data(data)
         .enter()
         .append("circle")
-        .attr("cx", d => xScale1(d.poverty))
-        .attr("cy", d => yScale3(d.healthcare))
-        .attr("r", "10")
+        .attr("cx", d => xLinearScale(d[chosenXAxis]))
+        .attr("cy", d => yLinearScale(d[chosenYAxis]))
+        .attr("r", 8)
         .attr("fill", "#778899")
-        .attr("opacity", ".75");
-    var circlesGroup2 = chartGroup2.selectAll("circle")
-        .data(data)
-        .enter()
-        .append("circle")
-        .attr("cx", d => xScale2(d.age))
-        .attr("cy", d => yScale2(d.smokes))
-        .attr("r", "10")
-        .attr("fill", "#778899")
-        .attr("opacity", ".75");
+        .attr("opacity", ".5");
 
-    // Circle Labels
-    var circleLabels1 = chartGroup1.selectAll("text")
-        .data(data)
-        .enter()
-        .append("text")
-        .attr("dx", d => xScale1(d.poverty) - 10)
-        .attr("dy", d => yScale3(d.healthcare) + 10)
-        .text(d => d.abbr);
-    var circleLabels2 = chartGroup2.selectAll("text")
-        .data(data)
-        .enter()
-        .append("text")
-        .attr("dx", d => xScale2(d.age) - 10)
-        .attr("dy", d => yScale2(d.smokes) + 10)
-        .text(d => d.abbr);
+
+    // // Circle Labels
+    // var circleLabels1 = chartGroup1.selectAll("text")
+    //     .data(data)
+    //     .enter()
+    //     .append("text")
+    //     .attr("dx", d => xScale1(d.poverty) - 10)
+    //     .attr("dy", d => yScale3(d.healthcare) + 10)
+    //     .text(d => d.abbr);
+    // var circleLabels2 = chartGroup2.selectAll("text")
+    //     .data(data)
+    //     .enter()
+    //     .append("text")
+    //     .attr("dx", d => xScale2(d.age) - 10)
+    //     .attr("dy", d => yScale2(d.smokes) + 10)
+    //     .text(d => d.abbr);
             
     // Tooltips
 
     // Axis Labels
-    chartGroup1.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 0 - chartMargin.left)
-        .attr("x", 0 - (height / 2))
-        .attr("dy", "1em")
-        .attr("class", "axisText")
-        .attr("font-weight", "bold")
-        .text("Lacks Healthcare (%)");
-    chartGroup1.append("text")
-        .attr("transform", `translate(${width / 2}, ${height + chartMargin.top - 7})`)
-        .attr("class", "axisText")
-        .attr("font-weight", "bold")
-        .text("In Poverty (%)");
-    chartGroup2.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 0 - chartMargin.left + 40)
-        .attr("x", 0 - (height / 2))
-        .attr("dy", "1em")
-        .attr("class", "axisText")
-        .attr("font-weight", "bold")
-        .text("Smokes(%)");
-    chartGroup2.append("text")
-        .attr("transform", `translate(${width / 2}, ${height + chartMargin.top - 7})`)
-        .attr("class", "axisText")
-        .attr("font-weight", "bold")
-        .text("Age (Median)");
+    // chartGroup1.append("text")
+    //     .attr("transform", "rotate(-90)")
+    //     .attr("y", 0 - chartMargin.left)
+    //     .attr("x", 0 - (height / 2))
+    //     .attr("dy", "1em")
+    //     .attr("class", "axisText")
+    //     .attr("font-weight", "bold")
+    //     .text("Lacks Healthcare (%)");
+    // chartGroup1.append("text")
+    //     .attr("transform", `translate(${width / 2}, ${height + chartMargin.top - 7})`)
+    //     .attr("class", "axisText")
+    //     .attr("font-weight", "bold")
+    //     .text("In Poverty (%)");
+    // chartGroup2.append("text")
+    //     .attr("transform", "rotate(-90)")
+    //     .attr("y", 0 - chartMargin.left + 40)
+    //     .attr("x", 0 - (height / 2))
+    //     .attr("dy", "1em")
+    //     .attr("class", "axisText")
+    //     .attr("font-weight", "bold")
+    //     .text("Smokes(%)");
+    // chartGroup2.append("text")
+    //     .attr("transform", `translate(${width / 2}, ${height + chartMargin.top - 7})`)
+    //     .attr("class", "axisText")
+    //     .attr("font-weight", "bold")
+    //     .text("Age (Median)");
 });
